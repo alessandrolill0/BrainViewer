@@ -1,0 +1,76 @@
+{
+  "source": "BrainColourExport.fbx",
+  "note": "lobe_id e' l'indice del canale in /lobes/activation",
+  "regions": [
+    {
+      "region": "frontal",
+      "hemisphere": "both",
+      "vertices": 7770,
+      "faces": 7366,
+      "file": "frontal.obj",
+      "lobe_id": 0,
+      "share_percent": 15.23,
+      "suggested_points": 761
+    },
+    {
+      "region": "parietal",
+      "hemisphere": "both",
+      "vertices": 11034,
+      "faces": 10400,
+      "file": "parietal.obj",
+      "lobe_id": 1,
+      "share_percent": 21.5,
+      "suggested_points": 1075
+    },
+    {
+      "region": "temporal",
+      "hemisphere": "both",
+      "vertices": 14318,
+      "faces": 13704,
+      "file": "temporal.obj",
+      "lobe_id": 2,
+      "share_percent": 28.33,
+      "suggested_points": 1417
+    },
+    {
+      "region": "occipital",
+      "hemisphere": "both",
+      "vertices": 7408,
+      "faces": 6752,
+      "file": "occipital.obj",
+      "lobe_id": 3,
+      "share_percent": 13.96,
+      "suggested_points": 698
+    },
+    {
+      "region": "cerebellum",
+      "hemisphere": "midline",
+      "vertices": 6786,
+      "faces": 7598,
+      "file": "cerebellum.obj",
+      "lobe_id": 4,
+      "share_percent": 15.71,
+      "suggested_points": 785
+    },
+    {
+      "region": "brainstem",
+      "hemisphere": "midline",
+      "vertices": 1630,
+      "faces": 1828,
+      "file": "brainstem.obj",
+      "lobe_id": 5,
+      "share_percent": 3.78,
+      "suggested_points": 189
+    },
+    {
+      "region": "other_midline",
+      "hemisphere": "midline",
+      "vertices": 742,
+      "faces": 723,
+      "file": "other_midline.obj",
+      "lobe_id": 6,
+      "share_percent": 1.49,
+      "suggested_points": 75
+    }
+  ]
+}

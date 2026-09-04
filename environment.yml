@@ -1,0 +1,25 @@
+# Environment conda del progetto BrainViewer.
+#
+#   conda env create -f environment.yml
+#   conda activate brain_viewer
+#
+# PYTHON 3.10 NON E' NEGOZIABILE. Essentia pubblica wheel macOS solo per
+# x86_64, e sono utilizzabili solo fino a cp310: le cp311 e cp312 si
+# installano ma vanno in SIGABRT all'import (verificato). Su Apple Silicon
+# non esistono affatto.
+#
+# librosa e ffmpeg stanno fra le dipendenze CONDA e non fra quelle pip:
+# llvmlite (dipendenza di numba, che serve a librosa) non pubblica piu' wheel
+# per macOS x86_64, e pip proverebbe a compilarlo dai sorgenti fallendo su
+# cmake. conda-forge lo ha gia' compilato.
+name: brain_viewer
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - librosa         # si porta dietro numba, llvmlite, scikit-learn, soundfile
+  - ffmpeg          # decodifica mp3/m4a
+  - pip:
+      - -r backend/requirements.txt
+      - -r tools/requirements.txt

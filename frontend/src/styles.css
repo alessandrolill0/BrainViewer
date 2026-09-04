@@ -1,0 +1,795 @@
+/* NEURO//CTRL — token del design system.
+ *
+ * Regole non negoziabili del design: border-radius 0 ovunque, nessuna ombra,
+ * palette quasi monocromatica con un solo accento (--accent) riservato allo
+ * stato attivo / valore live. Vedi design_handoff_neuro_ctrl/README.md.
+ */
+
+:root {
+  --bg: #08090a;
+  --surface: #0e1113;
+  --surface-alt: #101416;
+  --row-hover: #101315;
+
+  --line: #23282b;
+  --line-soft: #16191b;
+  --line-strong: #2b3134;
+  --line-dashed: #2f3538;
+  --line-hover: #3b4245;
+
+  --text-primary: #d8dcde;
+  --text-secondary: #9aa1a5;
+  --text-dim: #8d9498;
+  --text-muted: #6b7276;
+  --text-faint: #565c5f;
+  --text-ghost: #454b4e;
+  --text-log: #3f4548;
+
+  --accent: #eaf6ff;
+  --accent-hover: #ffffff;
+  --on-accent: #08090a;
+  --accent-shadow: #3a4d59;
+  --bar-idle: #2f3538;
+  --bar-idle-alt: #3b4245;
+
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --cond: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+  /* Il condensato e' pubblicato solo in 600/700: chiedendone altri il browser
+     lo sintetizza, allargando il tratto e mandando a capo i numeri grandi. */
+  --cond-weight: 600;
+
+  /* colonne condivise da corpo e player: i divisori verticali si allineano */
+  --cols: clamp(240px, 22vw, 316px) minmax(420px, 1fr) clamp(260px, 24vw, 340px);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  background: var(--bg);
+  height: 100%;
+}
+
+body {
+  font-family: var(--mono);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; border-radius: 0; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line); }
+
+@keyframes blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.15; }
+}
+
+.blip {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  display: block;
+  animation: blink 2.4s steps(1) infinite;
+}
+.blip--sm { width: 5px; height: 5px; animation-duration: 1.6s; }
+
+/* ── shell ────────────────────────────────────────────────────────────── */
+
+.shell {
+  position: relative;
+  height: 100vh;
+  min-height: 720px;
+  min-width: 1000px;
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr) minmax(128px, auto);
+  background: var(--bg);
+  overflow: auto;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.022) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* ── status bar ───────────────────────────────────────────────────────── */
+
+.status {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  z-index: 20;
+}
+.status__cell {
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+}
+.status__cell--brand { color: var(--accent); }
+.status__cell--right {
+  margin-left: auto;
+  gap: 16px;
+  border-right: 0;
+  border-left: 1px solid var(--line);
+  color: var(--text-dim);
+}
+.status__cell--action {
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--line);
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.status__cell--action:hover:not(:disabled) { color: var(--accent); }
+.status__cell--action:disabled { cursor: default; }
+.status__cell--action:hover:not(:disabled) .status__num { color: var(--accent); }
+
+.status__on { color: var(--accent); }
+.status__num { color: var(--text-secondary); }
+.status__clock { color: var(--text-primary); }
+
+/* ── corpo ────────────────────────────────────────────────────────────── */
+
+.body {
+  display: grid;
+  grid-template-columns: var(--cols);
+  min-height: 0;
+}
+
+.panel-label {
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: var(--text-dim);
+}
+.panel-label--tight { letter-spacing: 0.24em; }
+
+/* ── libreria ─────────────────────────────────────────────────────────── */
+
+.library {
+  border-right: 1px solid var(--line);
+  display: grid;
+  /* soggetto · intestazione · elenco · drop zone. L'elenco e' l'unica riga che
+     si allarga: e' l'unica il cui contenuto cresce. */
+  grid-template-rows: auto auto 1fr auto;
+  min-height: 0;
+}
+
+/* SOGGETTO / STATO — espressione facciale, vedi Subject.jsx. */
+.subject { padding: 13px 16px 14px; border-bottom: 1px solid var(--line); }
+.subject__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.subject__live { color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.subject__off { color: var(--text-ghost); letter-spacing: 0.14em; }
+.subject__row { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.subject__label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  width: 58px;
+  flex: none;
+}
+.subject__track { position: relative; height: 6px; background: var(--bar-idle); flex: 1; }
+.subject__fill { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+/* La tacca centrale dice dov'e' il neutro: senza, una barra corta a sinistra
+   e una a destra si leggerebbero uguali. */
+.subject__center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--text-ghost);
+}
+.subject__num {
+  font-size: 10px;
+  color: var(--text-secondary);
+  width: 34px;
+  text-align: right;
+  flex: none;
+}
+.subject__note {
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: var(--text-ghost);
+  text-align: right;
+  margin: 2px 0 10px;
+}
+.subject__mood {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 9px 0 11px;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 11px;
+}
+.subject__mood-value {
+  font-family: var(--cond);
+  font-weight: var(--cond-weight);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+/* L'accento solo quando la lettura e' netta: una parola incerta non deve
+   avere lo stesso peso visivo di una sicura. */
+.subject__mood-value--on { color: var(--accent); }
+.subject__mood-hint {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--text-ghost);
+}
+
+.subject__actions { display: flex; justify-content: space-between; gap: 8px; }
+.subject__action {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+.subject__action-num { font-size: 11px; color: var(--text-secondary); letter-spacing: 0; }
+.library__head {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.library__count {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+}
+.library__list { overflow-y: auto; min-height: 0; }
+
+.track {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 11px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-left: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+}
+.track:hover { background: var(--row-hover); }
+.track--on {
+  background: var(--surface);
+  border-left-color: var(--accent);
+}
+.track__num { font-size: 10px; color: var(--text-faint); }
+.track--on .track__num { color: var(--accent); }
+.track__name {
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.track--on .track__name { color: var(--accent); }
+.track__meta {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--text-faint);
+  margin-top: 5px;
+}
+.track__badge {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.track--on .track__badge { border-color: var(--line-dashed); color: var(--accent); }
+.track__badge--busy { color: var(--text-muted); }
+
+.dropzone {
+  margin: 14px 16px 16px;
+  padding: 20px 14px;
+  border: 1px dashed var(--line-dashed);
+  background: transparent;
+  text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+  width: calc(100% - 32px);
+}
+.dropzone:hover { border-color: var(--text-muted); }
+.dropzone--over { border-color: var(--accent); background: var(--surface-alt); }
+.dropzone__cta { font-size: 11px; letter-spacing: 0.2em; color: var(--text-primary); }
+.dropzone__hint {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  margin-top: 8px;
+}
+
+/* ── stage 3D ─────────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Senza min-height: 0 una cella di griglia non scende sotto la dimensione
+     del proprio contenuto: con il feed dentro, lo stage sfondava sul player. */
+  min-width: 0;
+  min-height: 0;
+}
+.stage__core {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 46%, var(--surface-alt) 0%, var(--bg) 62%);
+}
+.stage__frame {
+  position: relative;
+  flex: 1;
+  margin: 22px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 16px;
+}
+.stage__frame--grab { cursor: grab; }
+.stage__frame--grab:active { cursor: grabbing; }
+
+.stage__hatch {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.014) 0 6px,
+    transparent 6px 12px
+  );
+}
+.stage__corner { position: absolute; width: 16px; height: 16px; }
+.stage__corner--tl { top: -1px; left: -1px; border-top: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+.stage__corner--tr { top: -1px; right: -1px; border-top: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+.stage__corner--bl { bottom: -1px; left: -1px; border-bottom: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+.stage__corner--br { bottom: -1px; right: -1px; border-bottom: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+.stage__cross-v { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: rgba(234, 246, 255, 0.07); }
+.stage__cross-h { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(234, 246, 255, 0.07); }
+
+.stage__labels {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+.stage__labels-left { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Il feed occupa tutto il riquadro: le scritte gli stanno sopra, non intorno. */
+.stage__feed {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(90deg, #0b0e10 0 7px, #0d1113 7px 14px);
+  overflow: hidden;
+}
+.stage__feed img,
+.stage__feed video,
+.stage__feed canvas,
+.stage__feed iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+  display: block;
+}
+.stage__feed-text { font-size: 9px; letter-spacing: 0.2em; color: var(--text-faint); }
+
+/* Velatura sotto le scritte: senza, su un render chiaro diventano illeggibili.
+   E' monocroma, dallo stesso nero del fondo — nessun colore introdotto. */
+.stage__scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 96px;
+  pointer-events: none;
+  z-index: 2;
+}
+.stage__scrim--top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(8, 9, 10, 0.88), rgba(8, 9, 10, 0));
+}
+.stage__scrim--bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(8, 9, 10, 0.88), rgba(8, 9, 10, 0));
+}
+
+.stage__spacer { flex: 1; min-height: 0; }
+
+.stage__feed-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  margin-top: 22px;
+  text-align: center;
+  z-index: 3;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.stage__hud {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+.hud-group { display: flex; gap: 26px; }
+.hud__label { font-size: 9px; letter-spacing: 0.2em; color: var(--text-faint); }
+.hud__value {
+  font-family: var(--cond);
+  font-weight: var(--cond-weight);
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+.hud__value--on { color: var(--accent); }
+
+.motion { width: 240px; }
+.motion__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+}
+.motion__level { color: var(--accent); }
+.motion__bars {
+  margin-top: 7px;
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 22px;
+}
+.motion__bars > i { flex: 1; display: block; }
+
+/* ── referto ──────────────────────────────────────────────────────────── */
+
+.report {
+  border-left: 1px solid var(--line);
+  display: grid;
+  grid-template-rows: auto auto minmax(132px, 1fr);
+  min-height: 0;
+  overflow-y: auto;
+}
+.report__block { padding: 16px; border-bottom: 1px solid var(--line); }
+.report__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--text-dim);
+}
+.report__live { color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.report__release {
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.report__release:hover { background: var(--accent); color: var(--on-accent); }
+.report__name {
+  font-family: var(--cond);
+  font-weight: var(--cond-weight);
+  font-size: 30px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  margin-top: 14px;
+  line-height: 1;
+}
+.report__meta {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  margin-top: 7px;
+}
+.report__desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 13px;
+}
+.report__bar { margin-top: 15px; height: 2px; background: var(--line); }
+.report__bar > i { display: block; height: 2px; background: var(--accent); }
+.report__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-ghost);
+  margin-top: 7px;
+}
+
+.sectors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 11px;
+}
+/* I settori sono <button>: vanno azzerati gli stili di sistema, o il browser
+   ci mette raggio e sfondo propri e salta la regola del design. */
+.sector {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sector:hover { border-color: var(--line-strong, var(--text-ghost)); }
+.sector--on { background: var(--accent); }
+/* Bloccato a mano: un filo piu' marcato di quello che sta solo mostrando
+   l'area dominante, cosi' si distingue "l'ho scelto io" da "sta succedendo". */
+.sector--held { outline: 1px solid var(--accent); outline-offset: -3px; }
+.sector__top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+}
+.sector--on .sector__top { color: var(--accent-shadow); }
+.sector__name {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.sector--on .sector__name { color: var(--on-accent); }
+
+.anatomy {
+  margin-top: 13px;
+  height: 104px;
+  border: 1px solid var(--line);
+  background: repeating-linear-gradient(135deg, #0e1113 0 5px, #101416 5px 10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.anatomy__text { font-size: 9px; letter-spacing: 0.18em; color: var(--text-faint); }
+
+/* Wireframe: contorni misurati sugli OBJ, vedi tools/make_wireframe.py. */
+.anatomy__svg { height: 100%; width: 100%; padding: 6px; box-sizing: border-box; }
+.anatomy__region {
+  fill: none;
+  /* Il colore del tratto lo mette Wireframe.jsx, dalla palette dei neuroni. */
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: opacity 0.12s linear, stroke-width 0.12s linear;
+}
+.anatomy__region:hover { opacity: 1 !important; }
+/* Con i colori a distinguere le regioni, lo stato attivo si dice con lo
+   spessore e la piena opacita': un accento sopra a una tinta la coprirebbe. */
+.anatomy__region--on { filter: brightness(1.25); }
+
+.log { padding: 16px; min-height: 0; display: flex; flex-direction: column; }
+.log__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--text-dim);
+  margin-bottom: 11px;
+}
+.log__count { color: var(--text-ghost); }
+.log__rows { overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
+.log__row {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.log__row--last { color: var(--accent); }
+.log__time { color: var(--text-log); }
+
+/* ── player ───────────────────────────────────────────────────────────── */
+
+.player {
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: var(--cols);
+  z-index: 20;
+}
+.player__now {
+  border-right: 1px solid var(--line);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+.player__now-label { font-size: 9px; letter-spacing: 0.24em; color: var(--text-faint); }
+.player__now-name {
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 8px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player__now-meta { font-size: 9px; letter-spacing: 0.16em; color: var(--text-muted); }
+
+.player__main {
+  padding: 14px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.transport__group { display: flex; gap: 1px; }
+.btn-step {
+  width: 40px;
+  height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn-step:hover { color: var(--accent); border-color: var(--line-hover); }
+.btn-play {
+  min-width: 108px;
+  height: 34px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-play:hover { background: var(--accent-hover); }
+.btn-play:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.clock-big {
+  font-family: var(--cond);
+  font-weight: var(--cond-weight);
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.clock-big > span { color: var(--text-faint); font-size: 18px; }
+
+.volume { margin-left: auto; display: flex; align-items: center; gap: 11px; }
+.volume__label { font-size: 9px; letter-spacing: 0.2em; color: var(--text-faint); }
+.volume__hit { width: 92px; height: 14px; display: flex; align-items: center; cursor: pointer; }
+.volume__track { width: 100%; height: 3px; background: var(--line); position: relative; }
+.volume__fill { position: absolute; left: 0; top: 0; height: 3px; background: var(--text-primary); }
+.volume__knob { position: absolute; top: -4px; width: 2px; height: 11px; background: var(--accent); }
+.volume__num { font-size: 10px; color: var(--text-secondary); width: 30px; }
+
+.wave { display: flex; align-items: flex-end; gap: 2px; height: 40px; cursor: pointer; }
+.wave > i { flex: 1; display: block; }
+.seek { margin-top: 6px; height: 9px; position: relative; cursor: pointer; }
+.seek__line { position: absolute; top: 4px; left: 0; right: 0; height: 1px; background: var(--line); }
+.seek__fill { position: absolute; top: 4px; left: 0; height: 1px; background: var(--accent); }
+.seek__knob { position: absolute; top: 0; width: 1px; height: 9px; background: var(--accent); }
+
+.player__analysis {
+  border-left: 1px solid var(--line);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.player__analysis-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
+}
+.player__analysis-state { color: var(--accent); }
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.metric__label { font-size: 9px; letter-spacing: 0.16em; color: var(--text-faint); }
+.metric__value {
+  font-family: var(--cond);
+  font-weight: var(--cond-weight);
+  font-size: 20px;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.player__out { font-size: 9px; letter-spacing: 0.14em; color: var(--text-ghost); }
+
+/* Riquadro di guasto isolato, vedi Boundary.jsx. Stessa lingua del resto:
+   nessun colore d'allarme, il pannello non ne ha. */
+.boundary {
+  border: 1px solid var(--line);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: 0;
+}
+.boundary__title { font-size: 10px; letter-spacing: 0.2em; color: var(--text-secondary); }
+.boundary__hint { font-size: 9px; letter-spacing: 0.14em; color: var(--text-ghost); }
+
+/* Feed WebRTC: un <video> vero al posto del canvas. `object-fit` fa da solo
+   il ritaglio che con il canvas andava calcolato a mano (drawCover).
+   Posizionato in assoluto perche' `.stage__feed` e' un contenitore flex: se
+   restasse nel flusso si dividerebbe lo spazio con la scritta di stato e non
+   riempirebbe il riquadro. */
+.stage__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

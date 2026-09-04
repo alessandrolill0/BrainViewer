@@ -1,0 +1,19 @@
+# Servizio web e comunicazione con TouchDesigner.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-osc==1.9.3
+websockets==14.1
+python-multipart==0.0.20
+mutagen==1.47.0
+
+# Analisi audio offline.
+# Il pin e' esatto e va lasciato: e' l'unica build che su questa macchina
+# (macOS x86_64, Python 3.10) si importa senza abortire. Vedi environment.yml.
+essentia==2.1b6.dev1389
+
+# Pose tracking da webcam.
+mediapipe==0.10.21
+opencv-python==5.0.0
+
+# NOTA: librosa, numba e ffmpeg NON sono qui: arrivano da conda-forge, perche'
+# con pip llvmlite andrebbe compilato dai sorgenti. Vedi environment.yml.

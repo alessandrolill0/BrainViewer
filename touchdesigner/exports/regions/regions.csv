@@ -1,0 +1,8 @@
+lobe_id	region	file	suggested_points	share_percent	vertices	faces
+0	frontal	frontal.obj	761	15.23	7770	7366
+1	parietal	parietal.obj	1075	21.5	11034	10400
+2	temporal	temporal.obj	1417	28.33	14318	13704
+3	occipital	occipital.obj	698	13.96	7408	6752
+4	cerebellum	cerebellum.obj	785	15.71	6786	7598
+5	brainstem	brainstem.obj	189	3.78	1630	1828
+6	other_midline	other_midline.obj	75	1.49	742	723

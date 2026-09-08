@@ -93,14 +93,6 @@ Open `touchdesigner/3D_model/brain.toe`. The geometry of the seven regions lives
 `touchdesigner/exports/regions/` (one OBJ per region plus `regions.json`), and the
 instanced neuron is `touchdesigner/3D_model/single_neuron.obj`.
 
-Two configuration files are read as Table DATs:
-
-- **`palette.tsv`** — RGB colour of each region, in `lobe_id` order
-- **`entrainment.tsv`** — how much each lobe locks onto the beat (cerebellum 1.00,
-  occipital 0.00)
-
-After editing them, hit **Pulse** on the Table DAT.
-
 The Python callbacks go into their respective Callbacks DATs: `song_osc_callbacks.py` on the
 OSC In DAT, `webrtc_signaling.py` on the WebSocket DAT, `webrtc_callbacks.py` on the
 WebRTC DAT.

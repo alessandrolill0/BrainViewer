@@ -53,3 +53,15 @@ CLAUDE.md
 .DS_Store
 .vscode/
 .idea/
+
+# Script one-off di preparazione: hanno gia' prodotto i dati versionati
+# (i 7 OBJ, palette.tsv, entrainment.tsv, wireframe.js) e restano in locale
+# per poterli rigenerare. Fuori dal repo restano solo download_models.py e
+# check_camera.py, che servono a installare il progetto.
+tools/split_lobes.py
+tools/fbx_reader.py
+tools/make_wireframe.py
+tools/compare_tracks.py
+tools/preview_regions.py
+tools/bench_face.py
+tools/requirements.txt

@@ -31,10 +31,6 @@ operators cannot share a UDP port:
 | **9000** | OSC In **CHOP** | number streams: `/lobes/activation`, `/lobes/sync`, `/pose/*` |
 | **9001** | OSC In **DAT** | text commands: `/song/*` |
 
-⚠️ **The order of the seven arguments of `/lobes/activation` is a contract**: it is the
-sample order in TouchDesigner's Lookup CHOP, and changing it moves every neuron onto the
-wrong lobe without producing any error. The order comes from
-`touchdesigner/exports/regions/regions.json`, which is committed alongside the geometry.
 
 ## Layout
 
@@ -54,8 +50,7 @@ rationale.
 
 ### Backend
 
-The Python environment is **conda**, not venv, and is defined in
-[environment.yml](environment.yml).
+The Python environment is **conda**.
 
 ```bash
 conda env create -f environment.yml
@@ -64,11 +59,6 @@ conda env create -f environment.yml
 ```bash
 conda activate brain_viewer && cd backend && uvicorn app.main:app --reload --port 8000
 ```
-
-⚠️ **Python 3.10 is not negotiable.** Essentia only publishes macOS wheels for x86_64 and
-only up to cp310: cp311 and cp312 install but `SIGABRT` on import. For the same reason
-`librosa` and `ffmpeg` are conda dependencies rather than pip ones — `llvmlite` no longer
-ships wheels for macOS x86_64 and pip would try to build it from source.
 
 Optional variables: `TD_OSC_HOST` (default `127.0.0.1`), `TD_OSC_PORT` (`9000`),
 `TD_OSC_EVENT_PORT` (`9001`).
@@ -112,7 +102,7 @@ Two configuration files read by TD as Table DATs:
 - **`entrainment.tsv`** — how much each lobe locks onto the beat (cerebellum 1.00,
   occipital 0.00)
 
-⚠️ After editing them you must hit **Pulse** on the Table DAT: TouchDesigner keeps a copy in
+After editing them you must hit **Pulse** on the Table DAT: TouchDesigner keeps a copy in
 memory and does not re-read the file on its own.
 
 The Python callbacks go into their respective Callbacks DATs: `song_osc_callbacks.py` on the
@@ -180,9 +170,6 @@ that say how the track is going at any given moment. That is what drives the lob
 mapping follows the music itself rather than a structural label. **Essentia** does the
 signal work, **librosa** the local curves, **TensorFlow** the mood.
 
-⚠️ Tracks analysed before the timeline existed do not have it and need re-analysing: the
-mapping still runs on them, but it stays on a neutral moment for the whole track.
-
 ### Mood models
 
 Valence and arousal use two Essentia TensorFlow models that are not bundled with the
@@ -249,7 +236,3 @@ OSC runs over UDP, so the backend does not fail if TouchDesigner is not open.
 
 Both are part of setting the project up, and both are referenced in the sections above.
 
-The one-off scripts that produced the versioned data — the 7 per-region OBJs, `palette.tsv`,
-`entrainment.tsv` and the panel's `wireframe.js` — are not in the repository. Those files are
-committed and the project runs from them; regenerating them from a different 3D model is not
-part of using it.

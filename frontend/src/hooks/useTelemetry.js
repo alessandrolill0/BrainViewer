@@ -5,8 +5,8 @@
  *  continuous values (lobe activation, head tracking, estimated position).
  *  No component knows about the network.
  *
- *  What the backend cannot know — TouchDesigner render fps and resolution, live
- *  spectral flux — stays null and the UI shows `--`.
+ *  What the backend cannot know — TouchDesigner render fps and resolution —
+ *  stays null and the UI shows `--`.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,13 +24,11 @@ export function useTelemetry() {
   const [health, setHealth] = useState(null);
   const [tracks, setTracks] = useState([]);
   const [linked, setLinked] = useState(false);
-  const [latency, setLatency] = useState(null);
   const [clock, setClock] = useState(stamp());
   const [logs, setLogs] = useState([]);
   const [busy, setBusy] = useState(false);
 
   const socket = useRef(null);
-  const pingAt = useRef(0);
   const previous = useRef({ present: null, trackId: null, linked: null });
 
   const log = useCallback((message) => {
@@ -48,15 +46,12 @@ export function useTelemetry() {
       socket.current = ws;
 
       ws.onopen = () => {
-        pingAt.current = performance.now();
         ws.send(JSON.stringify({ type: 'ping' }));
       };
 
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
-        if (msg.type === 'pong') {
-          setLatency(Math.round(performance.now() - pingAt.current));
-        } else if (msg.type === 'library.state') {
+        if (msg.type === 'library.state') {
           setTracks(msg.tracks ?? []);
         } else if (msg.type === 'playback.ended') {
           // The state itself arrives from the /api/health polling; this is only
@@ -73,17 +68,15 @@ export function useTelemetry() {
         // this check it would clear the reference to the live one — the panel
         // would keep receiving but could no longer send.
         if (socket.current === ws) socket.current = null;
-        setLatency(null);
         if (!closed) retry = setTimeout(connect, RECONNECT_MS);
       };
       ws.onerror = () => ws.close();
     };
 
     connect();
-    // The ping also measures latency, so it repeats.
+    // Periodic ping: keeps the socket alive and tells us it still answers.
     const ping = setInterval(() => {
       if (socket.current?.readyState === WebSocket.OPEN) {
-        pingAt.current = performance.now();
         socket.current.send(JSON.stringify({ type: 'ping' }));
       }
     }, 2000);
@@ -110,7 +103,6 @@ export function useTelemetry() {
         if (alive) {
           setLinked(false);
           setHealth(null);
-          setLatency(null);
         }
       }
       if (alive) setClock(stamp());
@@ -272,7 +264,6 @@ export function useTelemetry() {
 
   return {
     linked,
-    latency,
     clock,
     busy,
     session: `AX-${1000 + (hash('brainviewer') % 900)}`,
@@ -303,9 +294,6 @@ export function useTelemetry() {
       // Track peaks for the player waveform, 0-1. Absent until the analysis is
       // done, in which case the player falls back to a decorative shape.
       waveform: current?.analysis?.waveform ?? null,
-      // Live spectral flux lives in TouchDesigner: without a return channel the
-      // backend does not know it.
-      flux: null,
     },
     // The 3D render runs in TouchDesigner, which reports neither fps nor format.
     render: { fps: null, resolution: null },

@@ -143,10 +143,6 @@ export default function Player({ telemetry }) {
             <div className="metric__label">RMS</div>
             <div className="metric__value">{orDash(analysis.rms, (v) => v.toFixed(3))}</div>
           </div>
-          <div>
-            <div className="metric__label">FLUX</div>
-            <div className="metric__value">{orDash(analysis.flux, (v) => v.toFixed(2))}</div>
-          </div>
         </div>
         <div className="player__out">OUT → TD/OSC</div>
       </div>

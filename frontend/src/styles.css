@@ -804,7 +804,7 @@ button { font-family: inherit; border-radius: 0; }
   color: var(--text-faint);
 }
 .player__analysis-state { color: var(--accent); }
-.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .metric__label { font-size: 9px; letter-spacing: 0.16em; color: var(--text-faint); }
 .metric__value {
   font-family: var(--cond);

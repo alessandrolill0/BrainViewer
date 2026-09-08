@@ -33,7 +33,7 @@ function useFullscreen() {
  *  Degraded states are spelled out (SIGNAL LOST, NO SUBJECT, OFFLINE) rather
  *  than disappearing. */
 export default function StatusBar({ telemetry }) {
-  const { linked, latency, clock, session, oscPort, pose, poseRunning, actions } = telemetry;
+  const { linked, clock, session, oscPort, pose, poseRunning, actions } = telemetry;
 
   const tracking = !poseRunning ? 'OFFLINE' : pose?.present ? 'ACTIVE' : 'NO SUBJECT';
   const [fullscreen, toggleFullscreen] = useFullscreen();
@@ -55,16 +55,13 @@ export default function StatusBar({ telemetry }) {
         className="status__cell status__cell--action"
         onClick={actions.calibratePose}
         disabled={tracking !== 'ACTIVE'}
-        title="Mettiti dritto davanti alla webcam e clicca: fissa la posizione neutra"
+        title="Sit upright in front of the webcam and click: sets the neutral pose"
       >
         TRACKING
         <span className={tracking === 'ACTIVE' ? 'status__on' : 'status__num'}>{tracking}</span>
       </button>
       <div className="status__cell">
         TD-OSC<span className="status__num">{oscPort ? `:${oscPort}` : '--'}</span>
-      </div>
-      <div className="status__cell">
-        LATENCY<span className="status__num">{orDash(latency, (v) => `${v} ms`)}</span>
       </div>
       {/* The cell is also the control: the design had no button for tracking,
           and adding one would have introduced an element outside the system.
@@ -73,7 +70,7 @@ export default function StatusBar({ telemetry }) {
         type="button"
         className="status__cell status__cell--action"
         onClick={actions.togglePose}
-        title={poseRunning ? 'Ferma il tracciamento del volto' : 'Avvia il tracciamento del volto'}
+        title={poseRunning ? 'Stop face tracking' : 'Start face tracking'}
       >
         WEBCAM
         <span className={poseRunning ? 'status__on' : 'status__num'}>
@@ -86,9 +83,9 @@ export default function StatusBar({ telemetry }) {
         type="button"
         className="status__cell status__cell--action"
         onClick={toggleFullscreen}
-        title={fullscreen ? 'Esci dallo schermo intero' : 'Vai a schermo intero'}
+        title={fullscreen ? 'Leave full screen' : 'Go full screen'}
       >
-        SCHERMO
+        SCREEN
         <span className={fullscreen ? 'status__on' : 'status__num'}>
           {fullscreen ? 'FULLSCREEN' : 'WINDOWED'}
         </span>

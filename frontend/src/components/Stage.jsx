@@ -144,7 +144,7 @@ export default function Stage({ telemetry }) {
           />
         </div>
         {!feed.live && (
-          <div className="stage__feed-note">AREA RISERVATA AL MODELLO 3D — IN ATTESA DI TOUCHDESIGNER</div>
+          <div className="stage__feed-note">3D MODEL AREA — WAITING FOR TOUCHDESIGNER</div>
         )}
         {/* Crosshairs and hatching say "the model goes here" while the box is
             empty. With the render inside they would be decoration on top of the
@@ -167,7 +167,7 @@ export default function Stage({ telemetry }) {
         <div className="stage__labels">
           <span className="stage__labels-left">
             <span style={{ color: 'var(--accent)' }}>TD // RENDER 3D</span>
-            <span>CERVELLO — VISTA PRINCIPALE</span>
+            <span>BRAIN — MAIN VIEW</span>
           </span>
           <span style={{ whiteSpace: 'nowrap' }}>
             {feed.live && feed.fps ? `${feed.fps} FPS` : '-- FPS'} ·{' '}

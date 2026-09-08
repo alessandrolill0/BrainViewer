@@ -85,6 +85,15 @@ def pose_state() -> dict:
     return manual_pose.state()
 
 
+def expression_state() -> dict:
+    """Facial expression, only ever from the webcam.
+
+    Mouse-driven pose has no face, so with the webcam off this stays neutral
+    and the terms that read it contribute nothing.
+    """
+    return pose_tracker.expression.state()
+
+
 def current_activation() -> list[float]:
     """Lobe activation right now, for the LobeSender in `live` mode.
 
@@ -92,15 +101,16 @@ def current_activation() -> list[float]:
     brain stays alive and waiting instead of going dark.
     """
     pose = pose_state()
+    expression = expression_state()
     if not playback.playing or playback.track_id is None:
-        return mapping.idle_vector(pose)
+        return mapping.idle_vector(pose, expression)
     try:
         track = library.get(playback.track_id)
     except LibraryError:
-        return mapping.idle_vector(pose)
+        return mapping.idle_vector(pose, expression)
     if track.get('analysis_status') != 'done':
-        return mapping.idle_vector(pose)
-    return mapping.activation(track['analysis'], playback.position(), pose)
+        return mapping.idle_vector(pose, expression)
+    return mapping.activation(track['analysis'], playback.position(), pose, expression)
 
 
 def current_synchrony() -> float:
@@ -228,7 +238,7 @@ async def health():
         "mood_models": audio_analysis.models_available(),
         "pose": pose_state(),
         # Panel-only tool: drives nothing in the render and never goes over OSC.
-        "expression": pose_tracker.expression.state(),
+        "expression": expression_state(),
     }
 
 

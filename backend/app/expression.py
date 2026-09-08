@@ -7,8 +7,13 @@ so two things are kept separate and shown separately in the panel:
    the MediaPipe Face Landmarker blendshapes;
 2. valence and arousal — a combination of those, labelled as estimated.
 
-This drives nothing in the render, so it never goes over OSC and the contract in
-docs/protocol.md is unaffected.
+Of these, only `arousal` reaches the render, through the brainstem
+(mapping.FACE_AROUSAL): it is the one axis with a real substrate in a region
+this model actually has — the reticular activating system and the locus
+coeruleus regulate exactly that. `valence`, the facial actions and the mood
+label stay in the panel. Nothing here adds an OSC address: the contribution
+lands inside one of the seven values already sent, so docs/protocol.md is
+unaffected.
 
 Face Landmarker costs about 23 ms per frame against 5 ms for face_detection, so
 it runs at 10 Hz on the frame the FaceTracker has already captured, while
@@ -31,7 +36,7 @@ RATE_HZ = float(os.getenv('EXPRESSION_HZ', '10'))
 SMOOTHING = 0.25
 
 #: Below this a blendshape is model noise, not movement: a still face sits
-#: around 0.02-0.10 (measured with bench_face).
+#: around 0.02-0.10, measured on this webcam.
 NOISE_FLOOR = 0.12
 
 NEUTRAL = {'smile': 0.0, 'brow': 0.0, 'jaw': 0.0, 'eyes': 0.0,

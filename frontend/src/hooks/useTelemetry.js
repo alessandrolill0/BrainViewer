@@ -31,7 +31,7 @@ export function useTelemetry() {
 
   const socket = useRef(null);
   const pingAt = useRef(0);
-  const previous = useRef({ section: null, present: null, trackId: null, linked: null });
+  const previous = useRef({ present: null, trackId: null, linked: null });
 
   const log = useCallback((message) => {
     setLogs((rows) => [{ t: stamp(), m: message }, ...rows].slice(0, LOG_MAX));
@@ -138,17 +138,6 @@ export function useTelemetry() {
     [tracks, playback?.track_id],
   );
 
-  const section = useMemo(() => {
-    const sections = current?.analysis?.sections;
-    if (!sections || !playback) return null;
-    const p = playback.position ?? 0;
-    return (
-      sections.find((s) => p >= s.start && p < s.end) ??
-      (p < sections[0]?.start ? sections[0] : sections[sections.length - 1]) ??
-      null
-    );
-  }, [current, playback]);
-
   useEffect(() => {
     const prev = previous.current;
     if (prev.linked !== null && prev.linked !== linked) {
@@ -164,12 +153,7 @@ export function useTelemetry() {
       if (current) log(`SOURCE LOADED — ${current.title?.toUpperCase() ?? ''}`);
       prev.trackId = playback.track_id;
     }
-    const label = section?.label;
-    if (label && prev.section !== label) {
-      if (prev.section !== null) log(`SECTION CHANGE — ${label.toUpperCase()}`);
-      prev.section = label;
-    }
-  }, [linked, pose, playback, current, section, log]);
+  }, [linked, pose, playback, current, log]);
 
   /* ── actions ──────────────────────────────────────────────────────── */
 
@@ -252,6 +236,16 @@ export function useTelemetry() {
           await api.poseCalibrate();
           log('HEAD TRACK: NEUTRAL POSE SET');
         }),
+      /** Deletes the track and its file. The backend broadcasts the new
+       *  library, so the list updates on its own. If the deleted track was
+       *  playing, playback is stopped first: otherwise the position keeps
+       *  running against a file that is no longer there. */
+      remove: (trackId, title) =>
+        guard(async () => {
+          if (playback?.track_id === trackId && playback?.playing) await api.pause();
+          await api.remove(trackId);
+          log(`REMOVED — ${(title ?? trackId).toUpperCase()}`);
+        }),
       upload: async (files) => {
         for (const file of files) {
           try {
@@ -293,7 +287,6 @@ export function useTelemetry() {
 
     activation,
     dominant,
-    section,
 
     pose,
     // Panel-only tool: does not touch the render, and absent until the webcam

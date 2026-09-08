@@ -30,7 +30,7 @@ function useWave(name, peaks) {
 }
 
 export default function Player({ telemetry }) {
-  const { current, playing, position, duration, volume, analysis, section, actions } = telemetry;
+  const { current, playing, position, duration, volume, analysis, actions } = telemetry;
 
   const wave = useWave(current?.title ?? '', analysis?.waveform);
   const progress = duration ? clamp01(position / duration) : 0;
@@ -148,9 +148,7 @@ export default function Player({ telemetry }) {
             <div className="metric__value">{orDash(analysis.flux, (v) => v.toFixed(2))}</div>
           </div>
         </div>
-        <div className="player__out">
-          OUT → TD/OSC · SECTION {section?.label ? section.label.toUpperCase() : '--'}
-        </div>
+        <div className="player__out">OUT → TD/OSC</div>
       </div>
     </footer>
   );

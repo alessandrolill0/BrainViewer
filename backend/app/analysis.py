@@ -1,10 +1,11 @@
-"""Offline track analysis: rhythm, key, structure, mood.
+"""Offline track analysis: rhythm, key, mood, and the local feature curves.
 
 Runs once per track after upload; the result is stored in the library. Real-time
 analysis is a separate concern and lives in TouchDesigner.
 
-Essentia does the signal work, librosa only the structural segmentation. The
-audio is decoded once and passed to both.
+Essentia does the signal work, librosa the curves that say how the track is
+going moment by moment (see _timeline). The audio is decoded once and passed to
+both.
 
 Mood comes either from pre-trained models (essentia-tensorflow plus the .pb
 files in backend/models/, fetched with tools/download_models.py) or, if they are
@@ -26,6 +27,18 @@ HOP = 512
 
 # Bars of the waveform sent to the panel; matches WAVE_BARS in Player.jsx.
 WAVEFORM_BARS = 104
+
+# Local feature curves: how the track is going at a given moment. 2 Hz is
+# plenty — these drive slow, semantic levels, and TouchDesigner adds the fast
+# modulation from the real audio.
+TIMELINE_HZ = 2.0
+TIMELINE_SMOOTH = 1.5       # seconds of smoothing over the curves
+
+# Absolute full scale of the local RMS: it is what lets a quiet track stay
+# quiet next to a loud one. Measured over the library — median 0.205, 99th
+# percentile 0.470 — so 0.45 keeps some headroom instead of clipping the loud
+# tracks to a flat 1.0, which is exactly how a channel dies.
+TIMELINE_ENERGY_RANGE = (0.02, 0.45)
 
 # --- TensorFlow mood models ---------------------------------------------
 MODELS_DIR = Path(__file__).resolve().parents[1] / 'models'
@@ -97,101 +110,84 @@ def _mood_from_model(audio: np.ndarray) -> dict | None:
         return None
 
 
-def _sections(audio: np.ndarray, beats: np.ndarray, duration: float) -> list[dict]:
-    """Split the track into sections and try to name them.
+def _resample_curve(values: np.ndarray, n: int) -> np.ndarray:
+    """Average `values` down to `n` samples, evenly spaced over its length."""
+    if n <= 0 or values.size == 0:
+        return np.zeros(max(n, 0))
+    edges = np.linspace(0, values.size, n + 1).astype(int)
+    return np.array([values[a:b].mean() if b > a else values[min(a, values.size - 1)]
+                     for a, b in zip(edges[:-1], edges[1:])])
 
-    The criterion is timbre: beat-synchronous MFCCs are compared and cut at the
-    points of change. The names are a heuristic labelling, not recognition.
+
+def _relative(values: np.ndarray) -> np.ndarray:
+    """Scale to 0-1 on the track's own 5th-95th percentile range.
+
+    Percentiles rather than min/max: a single silent frame or one clipped peak
+    would otherwise set the whole scale.
     """
-    if duration < 20 or len(beats) < 8:
-        # Too short to have a structure: one section is the honest answer.
-        return [{'start': 0.0, 'end': round(duration, 3), 'label': 'verse'}]
+    lo, hi = np.percentile(values, 5), np.percentile(values, 95)
+    if hi - lo < 1e-9:
+        return np.full_like(values, 0.5)
+    return np.clip((values - lo) / (hi - lo), 0.0, 1.0)
 
+
+def _timeline(audio: np.ndarray, duration: float) -> dict:
+    """Local feature curves along the track, sampled at TIMELINE_HZ.
+
+    This is what tells the mapping how the track is going *right now*. It
+    replaces the earlier structural sections (intro/verse/chorus): on this kind
+    of material — instrumentals, loops, ambient — song form is often simply not
+    present in the signal, and labelling it anyway meant the mapping ran on an
+    invented structure. A continuous envelope makes no claim it cannot keep.
+
+    Two of the curves are on an absolute scale and two are relative to the
+    track, on purpose: `energy` and `brightness` let a quiet track stay quiet
+    compared to a loud one, while `dynamics`, `percussive` and `novelty` are the
+    internal contrast, which only means anything within one piece.
+    """
+    n = int(max(2, round(duration * TIMELINE_HZ)))
     y = librosa.resample(audio, orig_sr=SAMPLE_RATE, target_sr=SEGMENT_SR)
-    mfcc = librosa.feature.mfcc(y=y, sr=SEGMENT_SR, n_mfcc=13, hop_length=HOP)
+
     rms = librosa.feature.rms(y=y, hop_length=HOP)[0]
+    centroid = librosa.feature.spectral_centroid(y=y, sr=SEGMENT_SR, hop_length=HOP)[0]
+    onset = librosa.onset.onset_strength(y=y, sr=SEGMENT_SR, hop_length=HOP)
 
-    beat_frames = librosa.time_to_frames(beats, sr=SEGMENT_SR, hop_length=HOP)
-    beat_frames = np.unique(np.clip(beat_frames, 0, mfcc.shape[1] - 1))
-    if len(beat_frames) < 4:
-        return [{'start': 0.0, 'end': round(duration, 3), 'label': 'verse'}]
+    # Timbral change: distance between consecutive MFCC frames, without the
+    # first coefficient, which is essentially log-energy and would make this
+    # curve a duplicate of `dynamics`.
+    mfcc = librosa.feature.mfcc(y=y, sr=SEGMENT_SR, n_mfcc=13, hop_length=HOP)[1:]
+    scale = mfcc.std(axis=1, keepdims=True)
+    scale[scale < 1e-9] = 1.0
+    mfcc = mfcc / scale
+    change = np.concatenate([[0.0], np.linalg.norm(np.diff(mfcc, axis=1), axis=0)])
 
-    sync = librosa.util.sync(mfcc, beat_frames, aggregate=np.mean)
-    sync_rms = librosa.util.sync(rms[np.newaxis, :], beat_frames, aggregate=np.mean)[0]
+    curves = {
+        'energy': _norm_array(_resample_curve(rms, n), *TIMELINE_ENERGY_RANGE),
+        'dynamics': _relative(_resample_curve(rms, n)),
+        'percussive': _relative(_resample_curve(onset, n)),
+        'brightness': _norm_array(_resample_curve(centroid, n), *BRIGHTNESS_RANGE),
+        'novelty': _relative(_resample_curve(change, n)),
+    }
 
-    # Roughly one section every 25 seconds, within reasonable bounds.
-    n_segments = int(min(10, max(3, duration // 25)))
-    n_segments = min(n_segments, sync.shape[1] - 1)
-    bounds = librosa.segment.agglomerative(sync, n_segments)
-    bounds = np.unique(np.concatenate([[0], bounds, [sync.shape[1]]]))
+    # A little smoothing: these drive the activation of a whole lobe, and
+    # sample-to-sample jitter would read as flicker rather than as musical
+    # change. TouchDesigner smooths again downstream.
+    width = max(1, int(round(TIMELINE_SMOOTH * TIMELINE_HZ)))
+    if width > 1:
+        window = np.ones(width) / width
+        for name, curve in curves.items():
+            curves[name] = np.convolve(np.pad(curve, (width, width), mode='edge'),
+                                       window, mode='same')[width:-width]
 
-    beat_times = librosa.frames_to_time(beat_frames, sr=SEGMENT_SR, hop_length=HOP)
-    segments = []
-    for start_idx, end_idx in zip(bounds[:-1], bounds[1:]):
-        if end_idx <= start_idx:
-            continue
-        start = float(beat_times[min(start_idx, len(beat_times) - 1)])
-        end = float(beat_times[min(end_idx, len(beat_times) - 1)]) if end_idx < len(beat_times) else duration
-        segments.append({
-            'start': round(start, 3),
-            'end': round(max(end, start + 0.1), 3),
-            '_timbre': sync[:, start_idx:end_idx].mean(axis=1),
-            '_energy': float(sync_rms[start_idx:end_idx].mean()),
-        })
-    if not segments:
-        return [{'start': 0.0, 'end': round(duration, 3), 'label': 'verse'}]
-
-    segments[-1]['end'] = round(duration, 3)
-    _label_sections(segments)
-
-    # Energy relative to the other sections, 0-1: it tells the mapping whether
-    # this chorus pushes harder than this verse, within this track.
-    energies = np.array([s['_energy'] for s in segments])
-    lo, hi = float(energies.min()), float(energies.max())
-    for seg, value in zip(segments, energies):
-        seg['energy'] = round(float((value - lo) / (hi - lo)) if hi > lo else 0.5, 3)
-
-    return [{k: v for k, v in s.items() if not k.startswith('_')} for s in segments]
+    return {
+        'hz': TIMELINE_HZ,
+        'samples': n,
+        **{name: [round(float(v), 3) for v in curve] for name, curve in curves.items()},
+    }
 
 
-def _label_sections(segments: list[dict]) -> None:
-    """Assign intro/verse/chorus/bridge/outro from similarity and energy."""
-    for seg in segments:
-        seg['label'] = 'verse'
-
-    if len(segments) > 2:
-        from sklearn.cluster import AgglomerativeClustering  # ships with librosa
-
-        timbres = np.vstack([s['_timbre'] for s in segments])
-        n_clusters = min(3, len(segments))
-        labels = AgglomerativeClustering(n_clusters=n_clusters).fit_predict(timbres)
-
-        # Chorus: among the groups occurring at least twice, the one with the
-        # highest mean energy. If none repeats, the track has no chorus.
-        energies, counts = {}, {}
-        for label, seg in zip(labels, segments):
-            energies.setdefault(label, []).append(seg['_energy'])
-            counts[label] = counts.get(label, 0) + 1
-        repeated = [l for l, n in counts.items() if n >= 2]
-        if repeated:
-            chorus = max(repeated, key=lambda l: np.mean(energies[l]))
-            for label, seg in zip(labels, segments):
-                if label == chorus:
-                    seg['label'] = 'chorus'
-
-        # A group appearing once, in the middle of the track, is a bridge.
-        for i, (label, seg) in enumerate(zip(labels, segments)):
-            if counts[label] == 1 and 0 < i < len(segments) - 1 and seg['label'] != 'chorus':
-                seg['label'] = 'bridge'
-
-    # Intro and outro only if genuinely short relative to the track: a first
-    # section can perfectly well already be a verse.
-    total = segments[-1]['end'] - segments[0]['start']
-    max_edge = max(25.0, total * 0.15)
-    if segments[0]['end'] - segments[0]['start'] <= max_edge:
-        segments[0]['label'] = 'intro'
-    if len(segments) > 1 and segments[-1]['end'] - segments[-1]['start'] <= max_edge:
-        segments[-1]['label'] = 'outro'
+def _norm_array(values: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    return np.clip((values - lo) / (hi - lo), 0.0, 1.0)
 
 
 def waveform(audio: np.ndarray, bars: int = WAVEFORM_BARS) -> list[float]:
@@ -248,7 +244,7 @@ def analyze(path: Path, progress=None) -> dict:
         sr=SEGMENT_SR, hop_length=HOP)))
     step(0.75)
 
-    sections = _sections(audio, np.asarray(beats), duration)
+    timeline = _timeline(audio, duration)
     step(0.95)
 
     mood = _mood_from_model(audio)
@@ -279,7 +275,7 @@ def analyze(path: Path, progress=None) -> dict:
         'scale': scale,
         'key_strength': round(float(key_strength), 3),
         'mood': mood,
-        'sections': sections,
+        'timeline': timeline,
         'descriptors': {
             'danceability': round(float(danceability), 3),
             'intensity': intensity,
@@ -290,6 +286,6 @@ def analyze(path: Path, progress=None) -> dict:
         },
     }
     step(1.0)
-    logger.info('Analisi completata: %s — %.1f bpm, %s %s, %d sezioni',
-                path.name, result['bpm'], key, scale, len(sections))
+    logger.info('Analisi completata: %s — %.1f bpm, %s %s, timeline di %d campioni',
+                path.name, result['bpm'], key, scale, timeline['samples'])
     return result

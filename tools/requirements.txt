@@ -1,5 +1,0 @@
-# Dipendenze dei soli script di preparazione della geometria (tools/).
-# Non servono al backend a runtime: vedi backend/requirements.txt.
-# Compatibili con numpy 1.x, che l'environment pinna per Essentia.
-numpy>=1.24
-pillow>=10.0

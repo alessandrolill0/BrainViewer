@@ -3,13 +3,12 @@ import { COLORS, OUTLINES, VIEW_BOX } from '../lib/wireframe';
 
 /** Anatomical wireframe, side view.
  *
- *  The outlines are not drawn but measured from the real region OBJs by
- *  tools/make_wireframe.py, the same geometry TouchDesigner instances. Rerun the
- *  script after a model change and the panel stays aligned.
+ *  The outlines in lib/wireframe.js are not drawn by hand: they are measured
+ *  from the real region OBJs, the same geometry TouchDesigner instances.
  *
- *  The regions use the same palette as the neurons, read from palette.tsv by
- *  that script, so the drawing is a legend for the render rather than a second
- *  language. The rest of the panel stays monochrome.
+ *  The regions use the same palette as the neurons, taken from the same
+ *  palette.tsv the render reads, so the drawing is a legend for the render
+ *  rather than a second language. The rest of the panel stays monochrome.
  *
  *  Clicking a region selects it, exactly like the sector map.
  */

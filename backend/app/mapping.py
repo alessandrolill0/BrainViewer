@@ -70,19 +70,7 @@ LOCAL_WEIGHTS = {
 FRONTAL_MOTION = 0.30
 
 # How much the visitor's own arousal, read from the face, adds to the arousal
-# the track carries. Both reach the brainstem because they are the same
-# quantity — the organism's level of activation — and the brainstem is where it
-# is regulated: the reticular activating system, locus coeruleus, raphe nuclei.
-# The two are added rather than blended: the music's arousal is a property of
-# the track, the face's is a measurement of the person, and one does not replace
-# the other. A still face contributes exactly zero (expression.NEUTRAL), so this
-# only ever pushes upward.
-#
-# What the face gives is an *action*, not an emotion: brow, jaw and eye opening
-# are measured, and calling their combination "arousal" is the one estimate
-# accepted here — it stays on the axis that has a real brainstem substrate,
-# unlike valence, whose substrate is ventral striatum and cingulate and does not
-# exist as a separate region in this model.
+# the track carries.
 FACE_AROUSAL = 0.35
 
 TEMPO_RANGE = (60.0, 170.0)

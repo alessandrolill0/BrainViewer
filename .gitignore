@@ -14,16 +14,12 @@ dist/
 .env
 *.local
 
-# --- Roba dell'utente e binari rigenerabili -------------------------------
 # Brani caricati e loro indice
 backend/uploads/
 # Modelli TensorFlow / MediaPipe: si riscaricano con tools/download_models.py
 backend/models/
 
 # --- TouchDesigner --------------------------------------------------------
-# Il .toe e' versionato: e' il cuore del progetto e pesa 48 KB.
-# Non lo sono i backup automatici (oltre 100 file, crescono a ogni salvataggio)
-# ne' i file di lavoro temporanei.
 touchdesigner/**/Backup/
 touchdesigner/**/CrashAutoSave.*
 touchdesigner/**/*.toe.*
@@ -32,32 +28,23 @@ touchdesigner/3D_model/background.toe
 # Versioni numerate: si tiene solo brain.toe, che e' la corrente
 touchdesigner/3D_model/brain.[0-9]*.toe
 
-# Modello non segmentato, superato dai 7 OBJ per regione in exports/regions/
 touchdesigner/3D_model/brain_model.obj
 
-# Sorgenti pesanti e archivi: rigenerabili con tools/split_lobes.py
 touchdesigner/exports/brain_source/
 touchdesigner/exports/brain-project/
 touchdesigner/exports/*.zip
 touchdesigner/exports/operators.csv
-# Anteprima di controllo, si rigenera con tools/preview_regions.py
 touchdesigner/exports/regions/preview.png
 
-# --- Materiale non necessario al funzionamento ----------------------------
 docs/
 design_handoff_neuro_ctrl/
-CLAUDE.md
-.claude/
 
 # --- OS / editor ----------------------------------------------------------
 .DS_Store
 .vscode/
 .idea/
 
-# Script one-off di preparazione: hanno gia' prodotto i dati versionati
-# (i 7 OBJ, palette.tsv, entrainment.tsv, wireframe.js) e restano in locale
-# per poterli rigenerare. Fuori dal repo restano solo download_models.py e
-# check_camera.py, che servono a installare il progetto.
+
 tools/split_lobes.py
 tools/fbx_reader.py
 tools/make_wireframe.py
